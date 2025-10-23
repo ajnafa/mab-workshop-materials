@@ -1,0 +1,24 @@
+[project]
+name = "mabworkshoppy"
+version = "0.1.0"
+description = "Python Code for Multi-Armed Bandit Workshop"
+authors = [
+    { name = "ajnafa", email = "adamjnafa@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "pandas",
+    "plotnine",
+    "scipy",
+    "polars",
+    "cmdstanpy",
+    "pyarrow>=21.0.0",
+]
+
+[project.scripts]
+mabworkshoppy = "mabworkshoppy:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
