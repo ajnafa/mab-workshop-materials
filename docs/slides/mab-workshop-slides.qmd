@@ -1,0 +1,291 @@
+---
+title: "Bayesian Optimization for Sequential Decisions"
+subtitle: "An Introduction to Multi-Arm Bandits"
+data-format: long
+author: "A. Jordan Nafa"
+format: 
+  revealjs:
+    theme: league
+    highlight-style: monokai
+    toc-depth: 2
+    embed-resources: true
+    code-link: true
+    transition: "fade"
+    code-block-bg: "#272822"
+    self-contained-math: true
+width: 1700
+height: 800
+css: "../assets/slide-style.css"
+---
+
+## About Me {#sec-about}
+
+::: incremental
+-   Data Scientist in the video game industry
+
+    -   My current work focuses on developing and implementing automated processes for Bayesian A/B testing, sequential decision problems, and experimentation in mobile games
+
+-   Formerly a PhD Candidate in Political Science at the University of North Texas
+
+    -   Expertise in Bayesian statistics and causal inference
+
+    -   Formerly taught undergraduate courses in American politics, causal inference, and applied statistics
+
+-   As with the many typos I have almost surely missed, all views expressed in this workshop are my own and should not be construed as reflecting those of my employer
+:::
+
+## Workshop Overview {#sec-overview}
+
+::: incremental
+-   **Introduction to Multi-Armed Bandits**
+
+    -   Brief review of perspectives on experimental design and analysis
+
+    -   The Bayesian perspective on sequential decision-making
+
+-   **Applied Examples in R and Python**
+
+    -   A simple bernoulli bandit implementation in `numpy`/`R`
+
+    -   An example using `Stan` for Bayesian modeling
+
+-   **Additional Topics**
+
+    -   Batch Bandits and Real-World Considerations
+
+    -   Contextual Bandits and Generalized Thompson Sampling
+:::
+
+# Introduction to Multi-Armed Bandits {#sec-intro}
+
+## Traditional A/B Testing
+
+::: incremental
+-   A/B testing has become the standard approach to data-driven decision-making in industry
+
+-   As the name implies, we are comparing two or more options by randomly assigning users to 
+    different groups and measuring their responses.
+
+- A traditional A/B test typically consists of the following:
+
+    - A control group and one or more treatment groups to which users are randomly assigned
+
+    - Pre-specified hypotheses and evaluation metrics to assess the outcomes
+
+    - A fixed target sample size or experiment duration
+
+    - Some amount of uncomfortable negotiation with your stakeholders over which of the above it is acceptable to cut corners on
+:::
+
+## Limitations of Traditional A/B Testing
+
+::: incremental
+-  Static experiments in industry settings typically require very, very large sample 
+   sizes to estimate realistic treatment effects, which creates three problems
+
+   - First, it realistically constrains the number of variants we can consider at one time 
+   since the more variants we have, the longer the experiment needs to run to identify an 
+   optimal decision.
+
+   - Second, static treatment allocations mean we are exposing users to a potentially suboptimal 
+   experience or offering for the entire duration of the experiment.
+
+   - Third, static configurations make it difficult to deal with heterogenous preferences, a problem 
+   we'll talk more about when we discuss contextual bandits.
+:::
+
+## Multi-Armed Bandits
+
+::: incremental
+-   **What are Multi-Armed Bandits?**
+
+    -   A collection of algorithms for modeling decision-making problems where an agent must choose between
+    multiple choices to maximize some notion of cumulative reward.
+
+-   **Key Concepts**
+
+    -   Exploration vs. Exploitation: The trade-off between learning about the performance of new choices
+    (exploration) and leveraging known information to maximize reward (exploitation).
+
+    -   Reward Distributions: Each arm is associated with a reward distribution, which the agent aims to 
+    learn over time.
+
+    - Regret: The difference between the reward of the best possible choice and the reward of the chosen
+    choice. The goal is to minimize regret over time.
+
+-   **Applications**
+
+    -   Online advertising, recommendation systems, clinical trials, and more.
+:::
+
+## Multi-Armed Bandits
+
+::: incremental
+-   In a MAB setting, the goal is to continuously learn and adapt the allocation of resources 
+    (e.g., traffic, patients, etc.) to different variants based on their observed performance.
+
+-   Key advantages of MAB approaches include:
+
+    - More efficient use of data by directing more traffic to better performing variants
+
+    - The ability to adapt to changing user preferences over time or across different contexts
+
+    - Improved overall user experience by personalizing content and offers in real-time
+:::
+
+## The Logic of Multi-Armed Bandits
+
+::: incremental
+-   At a high level, the logic of multi-armed bandits can be understood through the lens of exploration and exploitation.
+
+-   **Exploration** involves trying out different variants to gather information about their performance.
+
+-   **Exploitation** involves leveraging the information we have to allocate more resources to the best-performing variants.
+
+-   The challenge lies in finding the right balance between exploration and exploitation, especially in dynamic environments where user preferences may change over time.
+:::
+
+## Thompson Sampling
+
+::: incremental
+-  The state of the art in multi-armed bandits is often represented through the lens of **Thompson Sampling** (TS), a Bayesian approach to the exploration-exploitation dilemma
+
+-  Under Thompson Sampling, we maintain a probability distribution over the expected reward of each arm
+
+-  As we collect more data, we update these distributions to reflect the observed performance of each arm up to time $t-1$
+
+-  At time $t$, we sample from these distributions to make decisions about which variant to allocate resources to.
+:::
+
+## The Thompson Sampling Process: Initialization
+
+::: incremental
+- The simplest version of online Thompson Sampling for a Bernoulli Bandit uses a Beta distribution to model the probability of success for each arm. 
+
+- The Beta distribution is defined by two parameters, $\alpha$ (number of successes + 1) and $\beta$ (number of failures + 1).
+
+- In the initial period, we may have no prior information about the performance of either variant, in which case we tend to assume a uniform distribution
+
+- For our example with two in-game offer variants that we'll call Pink Giraffe and Yellow Lion, we initialize the parameters as follows:
+
+    - Pink Giraffe: $\alpha_{\text{giraffe}} = 1$, $\beta_{\text{giraffe}} = 1$
+
+    - Yellow Lion: $\alpha_{\text{lion}} = 1$, $\beta_{\text{lion}} = 1$
+:::
+
+## The Thompson Sampling Process: Sampling
+
+::: incremental
+- In each round (for each new user), the algorithm uses the current parameters ($\alpha$ and $\beta$) for each item to sample a potential true success rate, $\theta$.
+
+- The probability of selecting an arm is proportional to the probability that it is the optimal arm, a property that emerges naturally from the sampling process known as **probability matching**.
+
+- Sample a random success rate for the giraffe: 
+
+    - $\theta_{\text{giraffe}} \sim \text{Beta}(\alpha_{\text{giraffe}}, \beta_{\text{giraffe}})$
+
+- Sample a random success rate for the lion: 
+
+    - $\theta_{\text{lion}} \sim \text{Beta}(\alpha_{\text{lion}}, \beta_{\text{lion}})$
+:::
+
+## The Thompson Sampling Process: Selection
+
+::: incremental
+- The item with the highest sampled success rate is selected for the current user using the following decision rule:
+$$
+\text{Item to show} = \begin{cases} \text{Pink Giraffe} & \text{if } \theta_{\text{giraffe}} > \theta_{\text{lion}} \\ \text{Yellow Lion} & \text{if } \theta_{\text{lion}} \geq \theta_{\text{giraffe}} \end{cases}
+$$
+
+- This step balances exploration and exploitation
+
+    - Exploitation: Items with a high $\alpha/\beta$ ratio (i.e., a high estimated success rate) will tend to have higher samples, leading to them being chosen more often.
+
+    - Exploration: Even items that haven't performed as well have a non-zero probability of having a high sample (especially if the data collected is small), giving them a chance to be selected and proven better.
+:::
+
+## The Thompson Sampling Process: Observation and Update
+
+::: incremental
+- The user is shown the selected item. You then record the outcome, $R$. In this case
+
+    - $R = 1$ (Success): The user clicked on the ad offer.
+
+    - $R = 0$ (Failure): The user did not click on the ad offer.
+
+- Based on the observed outcome, the parameters of the chosen item are updated.
+
+- If the Pink Giraffe was chosen: 
+
+    - If $R=1$ (Success), increment $\alpha_{\text{giraffe}}$: $\alpha_{\text{giraffe}} \leftarrow \alpha_{\text{giraffe}} + 1$
+
+    - If $R=0$ (Failure), increment $\beta_{\text{giraffe}}$: $\beta_{\text{giraffe}} \leftarrow \beta_{\text{giraffe}} + 1$
+
+- If the Yellow Lion was chosen:
+
+    - If $R=1$ (Success), increment $\alpha_{\text{lion}}$: $\alpha_{\text{lion}} \leftarrow \alpha_{\text{lion}} + 1$
+
+    - If $R=0$ (Failure), increment $\beta_{\text{lion}}$: $\beta_{\text{lion}} \leftarrow \beta_{\text{lion}} + 1$
+:::
+
+## The Thompson Sampling Process: Repeat
+
+::: incremental
+- We repeat each of these steps after initialization on a loop for each new user until the algorithm converges to a stable allocation or the experiment ends.
+
+- As the experiment runs and more data is collected, the Beta distributions become tighter (less spread out) and more accurately reflect the true success rates of each item. 
+
+- This causes the algorithm to increasingly favor the item that has demonstrated better performance (exploitation) while still maintaining a small amount of exploration.
+:::
+
+## When Should You Prefer Bandits Over A/B Tests?
+
+:::incremental
+-  **Large Number of Variants**: When you have a large number of variants (i.e., more than 3) to test and minimal a priori beliefs about their relative performance, bandits can be used to narrow down viable options much more efficiently.
+
+-  **Real-Time Personalization**: If your application requires real-time personalization (e.g., recommendations), bandits can provide a more responsive solution by continuously optimizing for individual user preferences.
+
+-  **Limited Traffic or Experiment Duration**: When traffic is limited, bandits can make better use of available data by directing more traffic to better-performing variants earlier in the testing process.
+:::
+
+## Not A Replacement for Static Experiments
+
+::: incremental
+-  While bandits offer many advantages, they are not a one-size-fits-all solution and should be seen as 
+   complementary to more traditional experimentation rather than as a replacement.
+
+-  Traditional experiments are still valuable for validating specific hypotheses, measuring long-term effects, 
+   and estimating causal effects.
+
+- For example, in a marketing setting we may use a bandit to narrow down the number of ad creatives to two or 
+  three finalists before conducting a more traditional A/B test to validate their performance.
+:::
+
+# Simple Bernoulli Bandit Example
+
+# Additional Topics and Extensions
+
+## Batch Bandits and Real-World Considerations
+
+::: incremental
+- For practical reasons, it is seldom practical to update the bandit algorithm after each individual user interaction.
+
+- Instead, we often use **batch bandits**, where the algorithm is updated on some regular cadence (e.g., every 15 minutes)
+
+- This approach allows us to use more sophisticated algorithms such as MCMC sampling for posterior updates and relaxes the requirement for immediate feedback on each action taken.
+:::
+
+## Contextual Bandits and Generalized Thompson Sampling
+
+::: incremental
+- Contextual bandits extend the basic bandit framework by incorporating additional information about the user or context at the time of decision-making.
+
+- This allows the algorithm to make more informed choices based on the specific characteristics of each user, leading to potentially better outcomes.
+
+    - In effect, contextual bandits are an approach to implementing personalized recommendations or treatments in a sequential decision-making framework.
+
+- Generalized Thompson Sampling is an extension of the basic TS algorithm that can handle more complex reward structures and contexts, making it suitable for a wider range of applications.
+:::
+
+
+

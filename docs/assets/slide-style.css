@@ -1,0 +1,44 @@
+h1.title {
+    font-size: 100px;
+  }
+
+.reveal .quarto-title-block .quarto-title-authors .quarto-title-author .quarto-title-affiliation {
+    font-size: 50px;
+    margin-top: 0px;
+    margin-bottom: 8px;
+}
+
+#title-slide .subtitle, div.reveal div.slides section.quarto-title-block .subtitle {
+    margin-bottom: 2.5rem;
+    font-size: 50px;
+    font-weight: bold;
+}
+
+.reveal .quarto-title-block .quarto-title-authors .quarto-title-author .quarto-title-author-name {
+    margin-bottom: .1rem;
+    margin-top: .5rem;
+    padding-top: 50px;
+    font-size: 50px;
+}
+  
+.csl-entry {
+    padding-bottom: 0.5em;
+}
+  
+ol.aside-footnotes {
+    padding-top: 3em;
+    font-size: 14pt;
+}
+  
+.reveal a {
+    color: #FF355E;
+}
+  
+div.cell-output cell-output-stdout {
+    height: 800px;
+}
+  
+.reveal pre.sourceCode code {
+    max-height: 800px;
+}
+
